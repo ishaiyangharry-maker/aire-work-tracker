@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AIRE Work Tracker v3</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;color:#202430}
+.header{background:linear-gradient(135deg,#1a1f36,#2d3561);color:#fff;text-align:center;padding:26px 16px 18px}
+.header .small{font-size:12px;letter-spacing:4px;opacity:.65;text-transform:uppercase}
+.header h1{margin:7px 0 5px;font-size:30px;line-height:1.1}
+.header p{margin:0;opacity:.65;font-size:15px}
+.tabs{display:flex;background:#fff;border-bottom:1px solid #dfe6f0;position:sticky;top:0;z-index:10}
+.tabs button{flex:1;border:0;background:#fff;padding:13px 2px;font-size:14px;color:#777;border-bottom:3px solid transparent;white-space:nowrap}
+.tabs button.active{color:#2d3561;font-weight:700;border-bottom-color:#2d3561}
+.wrap{max-width:560px;margin:0 auto;padding:14px}
+.card{background:#fff;border-radius:18px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:14px}
+.section-title{font-size:18px;font-weight:800;margin-bottom:14px;color:#202430}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field label,.label{display:block;font-size:13px;color:#777;margin:0 0 6px;font-weight:600}
+input,select,textarea{
+  width:100%;max-width:100%;min-width:0;
+  height:48px;padding:0 12px;border:1px solid #d9e0ea;border-radius:12px;
+  font-size:16px;background:#f8fafc;font-family:inherit;color:#111;
+}
+textarea{height:84px;padding:12px;resize:vertical}
+input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;text-align:left}
+select{-webkit-appearance:auto;appearance:auto}
+.btn{width:100%;border:0;border-radius:12px;padding:14px;font-weight:800;font-size:16px;background:#2d3561;color:#fff;font-family:inherit}
+.btn.green{background:#195a3b}.btn.gray{background:#eef2f7;color:#2d3561}.btn.red{background:#fff;color:#c33;border:1px solid #f2bbbb}
+.summary{background:linear-gradient(135deg,#1a1f36,#2d3561);color:#fff}
+.money{font-size:36px;font-weight:900;margin-top:4px}
+.metric{text-align:center}.metric b{font-size:20px;color:#2d7a2d}
+.muted{color:#8a94a6;font-size:13px;line-height:1.4}
+.item{border-left:4px solid #2d3561}.item-top{display:flex;justify-content:space-between;gap:12px}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#11182f;color:#fff;padding:10px 20px;border-radius:22px;box-shadow:0 4px 18px rgba(0,0,0,.25);z-index:99}
+.hide{display:none!important}.mini{font-size:12px}.linkbtn{border:0;background:none;color:#2d3561;text-decoration:underline;font-size:13px}
+.massage-row{display:grid;grid-template-columns:1fr 1fr 42px;gap:8px;align-items:end;margin-bottom:10px}
+
+@media (max-width:430px){
+  .wrap{padding:12px 10px}
+  .header h1{font-size:28px}
+  .header .small{font-size:11px;letter-spacing:3px}
+  .tabs button{font-size:13px;padding:12px 0}
+  .card{border-radius:16px;padding:14px}
+  .grid2{grid-template-columns:1fr;gap:12px}
+  .grid2.keep{grid-template-columns:1fr 1fr}
+  input,select,textarea{font-size:16px;height:46px}
+  .massage-row{grid-template-columns:1fr;gap:10px}
+  .massage-row .delete-cell{width:100%}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="small">AIRE Ancient Baths</div>
+  <h1>My Work Tracker</h1>
+  <p>工作记录 · 收入追踪</p>
+</div>
+
+<div class="tabs">
+  <button class="active" data-tab="log">📝 记录</button>
+  <button data-tab="week">📊 本周</button>
+  <button data-tab="history">📋 历史</button>
+  <button data-tab="settings">⚙️ 设置</button>
+</div>
+
+<div class="wrap">
+  <section id="log">
+    <div class="card">
+      <div class="grid2">
+        <div class="field"><label>📅 日期</label><input id="date" type="date"></div>
+        <div class="field"><label>📌 状态</label><select id="type"><option>正常上班 Work</option><option>休息 Day Off</option><option>Call Out</option><option>Vacation</option><option>Sick Day</option><option>Holiday</option></select></div>
+      </div>
+    </div>
+
+    <div id="workFields">
+      <div class="card">
+        <div class="section-title">🕐 工作时间</div>
+        <div class="grid2 keep">
+          <div class="field"><label>上班 Clock In</label><input id="clockIn" type="time" value="09:00"></div>
+          <div class="field"><label>下班 Clock Out</label><input id="clockOut" type="time" value="17:00"></div>
+        </div>
+        <p class="muted" id="workPreview"></p>
+      </div>
+
+      <div class="card">
+        <div class="section-title">💆 按摩记录</div>
+        <div id="massages"></div>
+        <button class="btn gray" onclick="addMassage()" type="button">+ 添加一位客人</button>
+      </div>
+
+      <div class="card">
+        <div class="section-title">💰 小费 Tips</div>
+        <div class="grid2 keep">
+          <div class="field"><label>现金 Cash ($)</label><input id="tipCash" type="number" step="0.01" placeholder="0"></div>
+          <div class="field"><label>刷卡 Card ($)</label><input id="tipCard" type="number" step="0.01" placeholder="0"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">📋 其他</div>
+        <div class="grid2">
+          <div class="field"><label>Cancel 数量</label><input id="cancelled" type="number" placeholder="0"></div>
+          <div class="field"><label>备注 Note</label><input id="note" placeholder="可选"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="nonWorkFields" class="card hide">
+      <div class="field"><label>备注 Note</label><input id="note2" placeholder="可选"></div>
+      <p class="muted" id="specialPreview"></p>
+    </div>
+
+    <div class="card summary">
+      <div style="opacity:.7">今日预计总收入</div>
+      <div class="money" id="dayTotal">$0.00</div>
+      <div class="mini" id="breakdown" style="opacity:.75"></div>
+    </div>
+
+    <button class="btn" onclick="saveRecord()">保存 Save</button>
+    <p class="muted">保存后，数据会留在这个浏览器里。建议每周点“设置 → 导出备份”。</p>
+  </section>
+
+  <section id="week" class="hide">
+    <div class="card"><label class="label">选择周</label><select id="weekSelect" onchange="renderWeek()"></select></div>
+    <div class="grid2 keep" id="weekMetrics"></div>
+    <div class="card"><div class="section-title">每日明细</div><div id="weekList"></div></div>
+  </section>
+
+  <section id="history" class="hide"><div id="historyList"></div></section>
+
+  <section id="settings" class="hide">
+    <div class="card">
+      <div class="section-title">💰 工资设置</div>
+      <div class="field"><label>时薪 Hourly Rate ($/hr)</label><input id="hourlyRate" type="number"></div><br>
+      <div class="field"><label>按摩默认提成 Default Commission ($/次)</label><input id="massageRate" type="number"></div><br>
+      <div class="field"><label>Vacation Pay ($/hr)</label><input id="vacationRate" type="number"></div><br>
+      <div class="field"><label>Sick Pay ($/hr)</label><input id="sickRate" type="number"></div><br>
+      <div class="field"><label>Holiday Pay ($/hr)</label><input id="holidayRate" type="number"></div><br>
+      <button class="btn" onclick="saveSettings()">保存设置</button>
+    </div>
+
+    <div class="card">
+      <div class="section-title">🛟 备份/恢复</div>
+      <p class="muted">这是防止换手机、清缓存、浏览器删除数据。</p>
+      <button class="btn green" onclick="exportBackup()">导出备份 JSON</button><br><br>
+      <button class="btn gray" onclick="exportCSV()">导出 Excel/CSV</button><br><br>
+      <input type="file" id="importFile" accept=".json" onchange="importBackup(event)">
+      <p class="muted">恢复备份：选择之前导出的 JSON 文件。</p>
+    </div>
+  </section>
+</div>
+
+<div id="toast" class="toast hide"></div>
+
+<script>
+const KEY_RECORDS="aire_work_records_v3";
+const KEY_SETTINGS="aire_work_settings_v3";
+const OLD_KEYS=["aire_work_records_v2","aire_records"];
+const defaultSettings={hourlyRate:18,massageRate:35,vacationRate:18,sickRate:18,holidayRate:27};
+let records=load(KEY_RECORDS,null); if(!records){records=load(OLD_KEYS[0],load(OLD_KEYS[1],[])); save(KEY_RECORDS,records)}
+let settings=load(KEY_SETTINGS,load("aire_work_settings_v2",load("aire_settings",defaultSettings)));
+let massageRows=[{duration:60,commission:""}];
+
+function load(k,fb){try{return JSON.parse(localStorage.getItem(k)) ?? fb}catch{return fb}}
+function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
+function money(n){return "$"+Number(n||0).toFixed(2)}
+function today(){return new Date().toISOString().split("T")[0]}
+function toMins(t){if(!t)return 0;const [h,m]=t.split(":").map(Number);return h*60+m}
+function minsBetween(a,b){let d=toMins(b)-toMins(a);if(d<0)d+=1440;return d}
+function fmtH(mins){const h=Math.floor(mins/60),m=mins%60;return h+"h"+(m?" "+m+"m":"")}
+function weekOf(d){const dt=new Date(d+"T12:00:00"),day=dt.getDay();const mon=new Date(dt);mon.setDate(dt.getDate()-(day===0?6:day-1));return mon.toISOString().split("T")[0]}
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.remove("hide");setTimeout(()=>t.classList.add("hide"),2300)}
+function val(id){return document.getElementById(id).value}
+function num(id){return Number(val(id)||0)}
+
+document.getElementById("date").value=today();
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+["type","clockIn","clockOut","tipCash","tipCard","cancelled","note","note2","date"].forEach(id=>document.getElementById(id).addEventListener("input",calc));
+loadSettingsIntoUI(); renderMassages(); calc(); renderAll();
+
+function showTab(tab){
+ document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
+ ["log","week","history","settings"].forEach(id=>document.getElementById(id).classList.toggle("hide",id!==tab));
+ renderAll();
+}
+function isWork(){return val("type")==="正常上班 Work"}
+function calc(){
+ document.getElementById("workFields").classList.toggle("hide",!isWork());
+ document.getElementById("nonWorkFields").classList.toggle("hide",isWork());
+ const c=calculateCurrent();
+ document.getElementById("dayTotal").textContent=money(c.dayTotal);
+ document.getElementById("workPreview").innerHTML=`工作时长: <b>${fmtH(c.workMins)}</b>　时薪收入: <b>${money(c.hourlyEarned)}</b>`;
+ document.getElementById("specialPreview").textContent=c.specialPay?`预计收入: ${money(c.specialPay)} (8 hours)`: "这个状态默认收入 $0";
+ document.getElementById("breakdown").textContent=isWork()?`时薪 ${money(c.hourlyEarned)} · 提成 ${money(c.commissionTotal)} · 小费 ${money(c.tipTotal)}`:`特殊工资 ${money(c.specialPay)}`;
+}
+function calculateCurrent(){
+ const workMins=isWork()?minsBetween(val("clockIn"),val("clockOut")):0;
+ const massageMins=isWork()?massageRows.reduce((s,m)=>s+Number(m.duration||0),0):0;
+ const commissionTotal=isWork()?massageRows.reduce((s,m)=>s+Number(m.commission || settings.massageRate || 0),0):0;
+ const hourlyEarned=isWork()?workMins/60*Number(settings.hourlyRate||0):0;
+ const tipTotal=isWork()?num("tipCash")+num("tipCard"):0;
+ let specialPay=0;
+ if(val("type")==="Vacation") specialPay=8*Number(settings.vacationRate||0);
+ if(val("type")==="Sick Day") specialPay=8*Number(settings.sickRate||0);
+ if(val("type")==="Holiday") specialPay=8*Number(settings.holidayRate||0);
+ return {workMins,massageMins,commissionTotal,hourlyEarned,tipTotal,specialPay,dayTotal:hourlyEarned+commissionTotal+tipTotal+specialPay};
+}
+function renderMassages(){
+ const box=document.getElementById("massages"); box.innerHTML="";
+ massageRows.forEach((m,i)=>{
+  const div=document.createElement("div"); div.className="massage-row";
+  div.innerHTML=`<div class="field"><label>时长</label><select data-i="${i}" data-f="duration">${[30,45,60,75,90,105,120].map(d=>`<option ${m.duration==d?"selected":""} value="${d}">${d} min</option>`).join("")}</select></div>
+  <div class="field"><label>提成 空=默认$${settings.massageRate}</label><input data-i="${i}" data-f="commission" type="number" value="${m.commission||""}" placeholder="${settings.massageRate}"></div>
+  <div class="delete-cell"><button class="btn red" style="height:48px;padding:0" onclick="removeMassage(${i})">×</button></div>`;
+  box.appendChild(div);
+ });
+ box.querySelectorAll("[data-i]").forEach(el=>el.oninput=e=>{massageRows[+e.target.dataset.i][e.target.dataset.f]=e.target.value;calc()});
+ calc();
+}
+function addMassage(){massageRows.push({duration:60,commission:""});renderMassages()}
+function removeMassage(i){if(massageRows.length>1){massageRows.splice(i,1);renderMassages()}}
+function saveRecord(){
+ const c=calculateCurrent();
+ const record={id:Date.now(),date:val("date"),type:val("type"),clockIn:val("clockIn"),clockOut:val("clockOut"),massages:JSON.parse(JSON.stringify(massageRows)),tipCash:num("tipCash"),tipCard:num("tipCard"),cancelled:num("cancelled"),note:isWork()?val("note"):val("note2"),week:weekOf(val("date")),...c};
+ records=[record,...records.filter(r=>r.date!==record.date)].sort((a,b)=>b.date.localeCompare(a.date));
+ save(KEY_RECORDS,records);
+ document.getElementById("tipCash").value="";document.getElementById("tipCard").value="";document.getElementById("cancelled").value="";document.getElementById("note").value="";document.getElementById("note2").value="";
+ massageRows=[{duration:60,commission:""}];renderMassages();renderAll();toast("✅ 已保存");
+}
+function deleteRecord(id){if(confirm("确定删除这条记录？")){records=records.filter(r=>r.id!==id);save(KEY_RECORDS,records);renderAll();toast("已删除")}}
+function renderAll(){renderHistory();renderWeeks();renderWeek()}
+function renderHistory(){
+ const box=document.getElementById("historyList");
+ if(!records.length){box.innerHTML='<div class="card muted" style="text-align:center;padding:40px">还没有记录</div>';return}
+ box.innerHTML=records.map(r=>`<div class="card item"><div class="item-top"><div><b>${r.date}</b><div class="muted">${r.type}</div><div class="muted mini">${r.type==="正常上班 Work"?`${fmtH(r.workMins)} 上班 · ${fmtH(r.massageMins)} 按摩 · ${r.massages?.length||0} 位客 · cancel ${r.cancelled||0}`:""} ${r.note?` · 📝 ${r.note}`:""}</div></div><div style="text-align:right"><b style="color:#2d7a2d;font-size:18px">${money(r.dayTotal)}</b><br><button class="linkbtn" onclick="deleteRecord(${r.id})">删除</button></div></div></div>`).join("");
+}
+function renderWeeks(){
+ const sel=document.getElementById("weekSelect");
+ const weeks=[...new Set([weekOf(today()),...records.map(r=>r.week)])].sort((a,b)=>b.localeCompare(a));
+ const old=sel.value||weekOf(today());
+ sel.innerHTML=weeks.map(w=>`<option value="${w}" ${old===w?"selected":""}>${w}</option>`).join("");
+}
+function renderWeek(){
+ const w=document.getElementById("weekSelect").value||weekOf(today());
+ const wr=records.filter(r=>r.week===w);
+ const wage=wr.reduce((s,r)=>s+(r.hourlyEarned||0)+(r.specialPay||0),0), com=wr.reduce((s,r)=>s+(r.commissionTotal||0),0), tips=wr.reduce((s,r)=>s+(r.tipTotal||0),0), total=wr.reduce((s,r)=>s+(r.dayTotal||0),0), wm=wr.reduce((s,r)=>s+(r.workMins||0),0), mm=wr.reduce((s,r)=>s+(r.massageMins||0),0);
+ document.getElementById("weekMetrics").innerHTML=[
+  ["总收入",money(total)],["时薪/特殊工资",money(wage)],["提成",money(com)],["小费",money(tips)],["上班时长",fmtH(wm)],["按摩时长",fmtH(mm)]
+ ].map(x=>`<div class="card metric"><b>${x[1]}</b><div class="muted">${x[0]}</div></div>`).join("");
+ document.getElementById("weekList").innerHTML=wr.length?wr.map(r=>`<p><b>${r.date}</b> — ${r.type} — <b style="color:#2d7a2d">${money(r.dayTotal)}</b></p>`).join(""):'<p class="muted">这周还没有记录</p>';
+}
+function loadSettingsIntoUI(){Object.keys(defaultSettings).forEach(k=>document.getElementById(k).value=settings[k])}
+function saveSettings(){Object.keys(defaultSettings).forEach(k=>settings[k]=Number(document.getElementById(k).value||0));save(KEY_SETTINGS,settings);renderMassages();calc();toast("✅ 设置已保存")}
+function exportBackup(){download("aire-work-tracker-backup.json",JSON.stringify({version:3,exportedAt:new Date().toISOString(),records,settings},null,2),"application/json")}
+function importBackup(e){const f=e.target.files[0]; if(!f)return; const reader=new FileReader(); reader.onload=()=>{try{const data=JSON.parse(reader.result);records=data.records||[];settings={...defaultSettings,...(data.settings||{})};save(KEY_RECORDS,records);save(KEY_SETTINGS,settings);loadSettingsIntoUI();renderAll();toast("✅ 备份已恢复")}catch{alert("文件读取失败")}}; reader.readAsText(f); e.target.value=""}
+function exportCSV(){const header=["date","type","clockIn","clockOut","workMins","massageMins","clients","commission","tipCash","tipCard","tipTotal","specialPay","dayTotal","cancelled","note"]; const rows=records.map(r=>[r.date,r.type,r.clockIn||"",r.clockOut||"",r.workMins||0,r.massageMins||0,r.massages?.length||0,r.commissionTotal||0,r.tipCash||0,r.tipCard||0,r.tipTotal||0,r.specialPay||0,r.dayTotal||0,r.cancelled||0,(r.note||"").replaceAll('"','""')]); const csv=[header,...rows].map(row=>row.map(x=>`"${x}"`).join(",")).join("\n"); download("aire-work-tracker.csv",csv,"text/csv")}
+function download(name,content,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();URL.revokeObjectURL(a.href)}
+</script>
+</body>
+</html>
